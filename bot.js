@@ -12,7 +12,7 @@ client.on('message', msg => {
 	
 	if (msg.author.bot) return;
 	
-	let commands = msg.content.split(" ", 3);
+	let commands = msg.content.trim().split(/ +/g, 3);
 	if (commands[0] === "create" && commands[1] === "role") {
 		msg.guild.roles.create({
 			data: {
