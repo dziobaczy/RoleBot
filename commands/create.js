@@ -1,26 +1,41 @@
 exports.run = (client, msg, args) => {
 	
-	const msgFlags = args.filter(e => { return e.startsWith("--") || e.startsWith("-") })
-	flagsToDefaults();
+	const msgFlags = args
+	.filter(e => { 
+		if (e.startsWith("--") || e.startsWith("-")) {
+			let index = args.indexOf(e)
+			args.splice(index, 1)
+			return true
+		} else {
+			return false
+		}
+	})
+	.map(e => e.replace(/^(--|-)/,""))
+	
+	if (msgFlags.length > 1) { msg.channel.send("This command accepts only 1 flag"); return; }
+	
+	let wrongFlagFound = false
 	
 	msgFlags
-	.map(e => e.replace(/^(--|-)/,""))
 	.forEach(userFlag => {
 		
 		let foundFlag = false;
 		
 		flags.forEach(commandFlag => {
 			if (commandFlag.short === userFlag || commandFlag.long === userFlag) {
-				commandFlag.isOn = true;
 				foundFlag = true;
 			}
 		})
 		
 		if (foundFlag != true) { 
-			msg.channel.send("Unknow flag")
+			msg.channel.send("Unknow flag");
+			wrongFlagFound = true;
+			return
 		}
 		
 	});
+	
+	if (wrongFlagFound) { return }
 	
 	if (args.length != 2) { 
 		msg.channel.send("Wrong number of arguments! Example rolebot create role normik")
@@ -30,7 +45,21 @@ exports.run = (client, msg, args) => {
 	switch (args[0]) {
 		case 'role': {
 			addRole(msg, args[1]);
-			addChannels(msg, args[1]);
+			switch (msgFlags[0]) {
+				case 'n': { break; }
+				case 't': { 
+					addChannel(msg, "text", args[1]);
+					break;
+				}
+				case 'v': {
+					addChannel(msg, "voice", args[1]);
+					break;
+				}
+				default: {
+					addChannel(msg, "text", args[1]);
+					addChannel(msg, "voice", args[1]);
+				}
+			}
 			break;
 		}
 		default:
@@ -49,15 +78,11 @@ function addRole(msg, name) {
 	})
 }
 
-function addChannels(msg, name) {
+function addChannel(msg, type, name) {
 	let channelManager = msg.guild.channels
 	
 	channelManager.create(name, {
-		type: 'voice'
-	})
-	
-	channelManager.create(name, {
-		type: 'text'
+		type: type
 	})
 }
 
@@ -65,27 +90,19 @@ const flags = [
 	{
 		short: "n",
 		long: "no-channels",
-		isOn: false,
 		description: "Doesn't create the channels"
 	},
 	{
 		short: "t",
 		long: "text",
-		isOn: false,
 		description: "Creates only text channel"
 	},
 	{
 		short: "v",
 		long: "voice",
-		isOn: false,
 		description: "Creates only voice channel"
 	}
 ]
-
-// Refactor flags to class so it's just instantieted
-function flagsToDefaults() {
-	flags.forEach(f => f.isOn = false);
-}
 
 exports.help = {
 	name: 'create'
